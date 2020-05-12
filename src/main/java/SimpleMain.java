@@ -38,6 +38,7 @@ public class SimpleMain {
     private void testTwoBots() {
         BotsDriver bot1 = new BotsDriver();
         BotsDriver bot2 = new BotsDriver();
+        int count = 0;
         while (true) {
             try {
                 handleBot(bot1);
@@ -46,8 +47,14 @@ public class SimpleMain {
                 handleBot(bot2);
                 log.log("Bot 2: " + msg);
                 Thread.sleep(2000);
+                
+                //Repeated msg every 6 iterations to check for the alert box.
+                ++count;
+                if (count % 2 == 0) {
+                    msg = "Do you have a dog?";
+                }
             } catch (Exception e) {
-            
+                e.printStackTrace();
             }
         }
     }

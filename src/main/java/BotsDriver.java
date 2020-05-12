@@ -1,5 +1,8 @@
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.awt.*;
@@ -24,7 +27,9 @@ public class BotsDriver {
     
     public BotsDriver() {
         setChromeDriverProperty();
-        mDriver = new ChromeDriver();
+        ChromeOptions opt = new ChromeOptions();
+        opt.setUnhandledPromptBehaviour(UnexpectedAlertBehaviour.IGNORE);
+        mDriver = new ChromeDriver(opt);
         mDriver.manage().timeouts().pageLoadTimeout(20, TimeUnit.SECONDS);
         clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         
@@ -69,16 +74,37 @@ public class BotsDriver {
         StringSelection ss = new StringSelection(input);
         clipboard.setContents(ss, null);
         try {
-            Thread.sleep(100);
+            Thread.sleep(50);
             textInput.sendKeys(Keys.CONTROL + "v");
-            Thread.sleep(100);
+            Thread.sleep(50);
+            try {
+                textInput.sendKeys(Keys.ENTER);
+                Thread.sleep(150);
+            } catch (UnhandledAlertException e) {
+                System.out.println("ALERTBOX detected!!");
+                Thread.sleep(2000);
+                mDriver.switchTo().alert().accept();
+                Thread.sleep(100);
+                mDriver.findElement(By.name("thinkformebutton")).click();
+            }
+            
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        textInput.sendKeys(Keys.ENTER);
+        
         mWait.until(presenceOfElementLocated(By.id("snipTextIcon")));
         String response = mDriver.findElement(By.id("line1")).getText();
         return response;
+    }
+    
+    public boolean isAlertPresent() {
+        try {
+            mDriver.switchTo().alert();
+            return true;
+        }
+        catch (Exception e) {
+            return false;
+        }
     }
     
     public boolean isEnglish(String text) {
