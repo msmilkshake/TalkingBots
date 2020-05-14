@@ -10,7 +10,8 @@ public class Log {
     private File file;
     
     public Log() {
-        fileName = LocalDate.now()
+        fileName = "log/" +
+                LocalDate.now()
                 .toString() +
                 "_" +
                 LocalTime.now()

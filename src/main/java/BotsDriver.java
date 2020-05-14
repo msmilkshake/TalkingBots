@@ -1,12 +1,13 @@
 import org.openqa.selenium.*;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,10 +21,16 @@ public class BotsDriver {
     private WebDriver mDriver;
     private WebDriverWait mWait;
     
-    private Clipboard clipboard;
+    private ClipboardManager clipboard;
+    
+    private GetLang getLang;
     
     public Map<String, String> mTabHandles;
     private String currentTab;
+    
+    private static int alertsCounter = 0;
+    
+    private boolean clearDataFlag;
     
     public BotsDriver() {
         setChromeDriverProperty();
@@ -31,12 +38,17 @@ public class BotsDriver {
         opt.setUnhandledPromptBehaviour(UnexpectedAlertBehaviour.IGNORE);
         mDriver = new ChromeDriver(opt);
         mDriver.manage().timeouts().pageLoadTimeout(20, TimeUnit.SECONDS);
-        clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    
+        clipboard = new ClipboardManager();
+        getLang = new GetLang();
         
+        clearDataFlag = false;
+    
         mWait = new WebDriverWait(mDriver, 20);
         mTabHandles = new HashMap<>();
         newTab("cleverbot", "https://www.cleverbot.com", true);
         newTab("translator", "https://translate.google.com");
+        newTab("clearData", "chrome://settings/clearBrowserData");
         mDriver.switchTo().window(mTabHandles.get("cleverbot"));
     }
     
@@ -47,8 +59,30 @@ public class BotsDriver {
         }
     }
     
-    public void start() {
-        speakItalian();
+    public void setPos(int x, int y, int w, int h) {
+        mDriver.manage().window().setPosition(new Point(x, y));
+        mDriver.manage().window().setSize(new Dimension(w, h));
+    }
+    
+    public void setClearDataFlag(boolean clearDataFlag) {
+        this.clearDataFlag = clearDataFlag;
+    }
+    public boolean isClearDataFlag() {
+        return clearDataFlag;
+    }
+    
+    public void clearBrowserData() {
+        mDriver.switchTo().window(mTabHandles.get("clearData"));
+        mDriver.findElement(By.xpath("//settings-ui")).sendKeys(Keys.ENTER);
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        mDriver.navigate().to("chrome://settings/clearBrowserData");
+        mDriver.switchTo().window(mTabHandles.get("cleverbot"));
+        mDriver.navigate().to("https://www.cleverbot.com");
+        clearDataFlag = false;
     }
     
     public void newTab(String tabName, String url, Boolean flag) {
@@ -71,119 +105,73 @@ public class BotsDriver {
     public String sendInput(String input) {
         mDriver.switchTo().window(mTabHandles.get("cleverbot"));
         WebElement textInput = mWait.until(presenceOfElementLocated(By.name("stimulus")));
-        StringSelection ss = new StringSelection(input);
-        clipboard.setContents(ss, null);
+        clipboard.putInClipboard(input);
         try {
-            Thread.sleep(50);
+            Thread.sleep(10);
             textInput.sendKeys(Keys.CONTROL + "v");
-            Thread.sleep(50);
+            clipboard.restoreClipboard();
+            Thread.sleep(10);
             try {
                 textInput.sendKeys(Keys.ENTER);
-                Thread.sleep(150);
-            } catch (UnhandledAlertException e) {
-                System.out.println("ALERTBOX detected!!");
-                Thread.sleep(2000);
-                mDriver.switchTo().alert().accept();
                 Thread.sleep(100);
+            } catch (UnhandledAlertException alert) {
+                System.out.println("ALERTBOX detected!!");
+                ++alertsCounter;
+                Thread.sleep(20);
+                mDriver.switchTo().alert().accept();
+                Thread.sleep(50);
                 mDriver.findElement(By.name("thinkformebutton")).click();
             }
-            
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        
         mWait.until(presenceOfElementLocated(By.id("snipTextIcon")));
-        String response = mDriver.findElement(By.id("line1")).getText();
-        return response;
-    }
-    
-    public boolean isAlertPresent() {
-        try {
-            mDriver.switchTo().alert();
-            return true;
-        }
-        catch (Exception e) {
-            return false;
-        }
+        return mDriver.findElement(By.id("line1")).getText();
     }
     
     public boolean isEnglish(String text) {
         mDriver.switchTo().window(mTabHandles.get("translator"));
+
+        clipboard.putInClipboard(text);
+        
         WebElement translateInput = mWait.until(presenceOfElementLocated(By.id("source")));
-        
-        WebElement clearBtn = mDriver.findElement(By.className("clear-wrap"));
-        clearBtn.click();
-        
-        StringSelection ss = new StringSelection(text);
-        clipboard.setContents(ss, null);
         translateInput.sendKeys(Keys.CONTROL + "v");
-        GetLang getLang = new GetLang();
+        
+        clipboard.restoreClipboard();
         
         Thread t = new Thread(getLang);
         t.start();
         try {
             t.join();
-            Thread.sleep(500);
+            Thread.sleep(250);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         
         String lang = getLang.getLang();
         mDriver.navigate().to("https://translate.google.com");
-        return lang.contains("english");
-    }
-    
-    private void speakItalian() {
-        //WebElement textInput = mDriver.findElement(By.name("stimulus"));
-        //textInput.sendKeys("Pianoforte canzone amore." + Keys.ENTER);
-        //mWait.until(presenceOfElementLocated(By.id("snipTextIcon")));
-        //WebElement text = mDriver.findElement(By.id("line1"));
-        //System.out.println(text.getText());
-        
-        try {
-            mWait.until(presenceOfElementLocated(By.id("source")));
-            System.out.println("Found");
-            WebElement translateInput = mDriver.findElement(By.id("source"));
-            
-            String ita = "Pianoforte canzone amore.";
-            String eng = "2hatr you do, just yes.";
-            StringSelection ss = new StringSelection(eng);
-            
-            clipboard.setContents(ss, null);
-            translateInput.sendKeys(Keys.CONTROL + "v");
-            
-            GetLang getLang = new GetLang();
-            Thread t = new Thread(getLang);
-            
-            t.start();
-            t.join();
-            
-            String lang = getLang.getLang();
-            System.out.println(lang);
-            if (!lang.contains("english")) {
-                System.out.println("Text was not in english.");
-            } else {
-                System.out.println("Text was in english");
-            }
-            
-        } catch (Exception e) {
-            e.printStackTrace();
+        mDriver.switchTo().window(mTabHandles.get("cleverbot"));
+        boolean isEnglish = lang.contains("eng");
+        if (!isEnglish) {
+            System.out.println("Not english: " + lang + " ( in isEnglish() )");
+            System.out.println("Text: \"" + text + "\"");
         }
+        return isEnglish;
     }
     
     private class GetLang implements Runnable {
         private volatile String lang;
-        private WebElement detectedLaguage;
         
         public GetLang() {
             lang = null;
-            detectedLaguage = mDriver.findElement(By
-                    .cssSelector("div.goog-inline-block.jfk-button.jfk-button-standard" +
-                            ".jfk-button-collapse-right.jfk-button-checked"));
         }
         
         @Override
         public void run() {
+            WebElement detectedLaguage = mWait.until(presenceOfElementLocated(By
+                    .cssSelector("div.goog-inline-block.jfk-button.jfk-button-standard" +
+                            ".jfk-button-collapse-right.jfk-button-checked")));
             while (!detectedLaguage.getText().toLowerCase().contains("detected")) {
                 try {
                     Thread.sleep(50);
@@ -197,11 +185,18 @@ public class BotsDriver {
                 e.printStackTrace();
             }
             lang = detectedLaguage.getText().toLowerCase();
-            
         }
         
         public String getLang() {
             return lang;
         }
+    }
+    
+    public static int getAlertsCounter() {
+        return alertsCounter;
+    }
+    
+    public static void resetAlertsCounter() {
+        alertsCounter = 0;
     }
 }
