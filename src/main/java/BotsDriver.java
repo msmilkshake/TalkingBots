@@ -32,7 +32,9 @@ public class BotsDriver {
     
     private boolean clearDataFlag;
     
-    public BotsDriver() {
+    private FirebaseDB db;
+    
+    public BotsDriver(String dbFilename, String dbUrl) {
         setChromeDriverProperty();
         ChromeOptions opt = new ChromeOptions();
         opt.setUnhandledPromptBehaviour(UnexpectedAlertBehaviour.IGNORE);
@@ -41,6 +43,8 @@ public class BotsDriver {
     
         clipboard = new ClipboardManager();
         getLang = new GetLang();
+    
+        db = new FirebaseDB(dbFilename, dbUrl);
         
         clearDataFlag = false;
     
@@ -199,4 +203,5 @@ public class BotsDriver {
     public static void resetAlertsCounter() {
         alertsCounter = 0;
     }
+    
 }

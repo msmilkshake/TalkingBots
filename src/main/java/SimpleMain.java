@@ -8,6 +8,12 @@ public class SimpleMain {
     private int whatIsIndex;
     
     private String msg;
+    private String msg1;
+    private String msg2;
+    
+    private List<String> messageBuffer;
+    private final int MSG_BUFFER_SIZE;
+    
     private String switchMsg;
     
     private Log log;
@@ -28,6 +34,10 @@ public class SimpleMain {
     private BotsDriver bot1;
     private BotsDriver bot2;
     
+    private FirebaseDB db;
+    
+    private final Object BUFFER_LOCK;
+    
     public SimpleMain() {
         notEnglishResponses = new ArrayList<>(Arrays.asList(
                 "Please, speak in english.",
@@ -39,7 +49,7 @@ public class SimpleMain {
         ));
         Collections.shuffle(notEnglishResponses);
         notEnglishIndex = 0;
-    
+        
         whatIsResponses = new ArrayList<>(Arrays.asList(
                 "Idk.",
                 "I dont have one.",
@@ -52,6 +62,11 @@ public class SimpleMain {
         whatIsIndex = 0;
         
         msg = "Hello";
+        msg1 = "";
+        msg2 = "";
+        
+        messageBuffer = new ArrayList<>();
+        MSG_BUFFER_SIZE = 10;
         
         switchMsg = null;
         
@@ -69,55 +84,94 @@ public class SimpleMain {
         
         englishTreshold = 3;
         nonEnglishCount = 0;
-    
-        bot1 = new BotsDriver();
+        
+        bot1 = new BotsDriver("admin1.json", "https://startbots-81ecb.firebaseio.com/");
         bot1.setPos(0, 0, 800, 860);
-        bot2 = new BotsDriver();
+        bot2 = new BotsDriver("admin2.json", "https://startbots-50730.firebaseio.com/");
         bot2.setPos(800, 0, 800, 860);
+        
+        BUFFER_LOCK = new Object();
+        initBufferList();
     }
     
-    
+    private void initBufferList() {
+        for (int i = 0; i < MSG_BUFFER_SIZE; ++i) {
+            messageBuffer.add("");
+        }
+    }
     
     public static void main(String[] args) {
         new SimpleMain().testTwoBots();
     }
     
     private void testDatabase() {
-        new TestFirebaseFlagData().start();
+        new FirebaseDB("admin1.json", "https://startbots-81ecb.firebaseio.com/").start();
     }
     
-    private void testTwoBots() {
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    String change = scn.nextLine();
-                    System.out.println("Message set.");
-                    switchMsg = change;
-                    log.log("User entered message to change: \"" + change + "\"");
+    private void asyncMessageInjector() {
+        Thread t = new Thread(() -> {
+            while (true) {
+                String change = scn.nextLine();
+                if (change.equals(".consume")) {
+                    messageBuffer.set(MSG_BUFFER_SIZE - 1, "");
+                    System.out.println("Consumed messgage.");
+                    continue;
+                }
+                System.out.println("Message set.");
+                switchMsg = change;
+                log.log("User entered message to change: \"" + change + "\"");
+            }
+        });
+        t.start();
+    }
+    
+    private void asyncBotsLoop() {
+        Thread t = new Thread(() -> {
+            while (true) {
+                try {
+                    handleBot(bot1, bot2);
+                    log.log("Bot 1: " + msg);
+                    Thread.sleep(500);
+                    handleBot(bot2, bot1);
+                    log.log("Bot 2: " + msg);
+                    Thread.sleep(500);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         });
         t.start();
-        
-        while (true) {
-            try {
-                handleBot(bot1);
-                log.log("Bot 1: " + msg);
-                Thread.sleep(1000);
-                handleBot(bot2);
-                log.log("Bot 2: " + msg);
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                e.printStackTrace();
+    }
+    
+    private void asyncBufferGenerator() {
+        Thread t = new Thread(() -> {
+            while (true) {
+                if (messageBuffer.get(MSG_BUFFER_SIZE - 1).equals("")) {
+                    synchronized (BUFFER_LOCK) {
+                        BUFFER_LOCK.notify();
+                    }
+                } else {
+                    try {
+                        Thread.sleep(250);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-        }
+        });
+        t.start();
+    }
+    
+    private void testTwoBots() {
+        asyncMessageInjector();
+        asyncBotsLoop();
+        asyncBufferGenerator();
     }
     
     private void handleBehavior() {
         checkWhatIs();
         if (clearDataFlag) {
-            System.out.println("Will clewr data");
+            System.out.println("Will clear data");
             bot1.setClearDataFlag(true);
             bot2.setClearDataFlag(true);
             clearDataFlag = false;
@@ -125,7 +179,14 @@ public class SimpleMain {
         
     }
     
-    private void handleBot(BotsDriver bot) {
+    private void handleBot(BotsDriver bot, BotsDriver otherBot) {
+        synchronized (BUFFER_LOCK) {
+            try {
+                BUFFER_LOCK.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         handleBehavior();
         if (bot.isClearDataFlag()) {
             bot.clearBrowserData();
@@ -153,12 +214,47 @@ public class SimpleMain {
             msg = switchMsg;
             switchMsg = null;
             try {
-                Thread.sleep(1500);
+                Thread.sleep(250);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
         checkAlerts();
+        updateBuffer();
+        //changeMsgChain();
+    }
+    
+    private void updateBuffer() {
+        for (int i = MSG_BUFFER_SIZE - 1; i > 0; --i) {
+            messageBuffer.set(i,messageBuffer.get(i - 1));
+        }
+        messageBuffer.set(0, msg);
+    }
+    
+    private void waitServerConfirmation(BotsDriver bot, BotsDriver otherBot) {
+        if (msg2.isEmpty()) {
+            return;
+        }
+        
+        System.out.println("Waiting for server...");
+        while (true) {
+            if (db.isRequestFlag()) {
+                db.putMessage(msg2);
+                System.out.println("Google Nest finished!!");
+                db.disableFlag();
+                break;
+            }
+            try {
+                Thread.sleep(25);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    private void changeMsgChain() {
+        msg2 = msg1;
+        msg1 = msg;
     }
     
     private void checkAlerts() {

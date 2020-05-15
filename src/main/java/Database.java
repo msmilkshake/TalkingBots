@@ -12,7 +12,7 @@ public class Database {
         // Fetch the service account key JSON file contents
         FileInputStream serviceAccount = null;
         try {
-            serviceAccount = new FileInputStream("pvt/admin.json");
+            serviceAccount = new FileInputStream("pvt/admin1.json");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

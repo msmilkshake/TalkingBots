@@ -4,14 +4,28 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.sql.Driver;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 import static org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated;
 
 public class Main {
     
+    private Scanner scn;
+    
+    public Main() {
+        scn = new Scanner(System.in);
+    }
+    
     public static void main(String[] args) {
-        new Main().tests();
+        new Main().testDB();
+    }
+    
+    private void testDB() {
+        FirebaseDB db = new FirebaseDB("admin1.json", "https://startbots-81ecb.firebaseio.com/");
+        while (true) {
+            db.putMessage(scn.nextLine());
+        }
     }
     
     private void tests() {
