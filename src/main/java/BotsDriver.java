@@ -5,10 +5,6 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -32,9 +28,7 @@ public class BotsDriver {
     
     private boolean clearDataFlag;
     
-    private FirebaseDB db;
-    
-    public BotsDriver(String dbFilename, String dbUrl) {
+    public BotsDriver() {
         setChromeDriverProperty();
         ChromeOptions opt = new ChromeOptions();
         opt.setUnhandledPromptBehaviour(UnexpectedAlertBehaviour.IGNORE);
@@ -43,8 +37,6 @@ public class BotsDriver {
     
         clipboard = new ClipboardManager();
         getLang = new GetLang();
-    
-        db = new FirebaseDB(dbFilename, dbUrl);
         
         clearDataFlag = false;
     

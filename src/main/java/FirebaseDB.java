@@ -139,25 +139,45 @@ public class FirebaseDB {
     }
     
     public void disableFlag() {
-        REF.child("value").setValueAsync(0);
+        REF.child("value").setValue(0, new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                synchronized (FirebaseDB.this) {
+                    FirebaseDB.this.notify();
+                }
+            }
+        });
+        synchronized (this) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
     
-    public void putMessage(String message) {
-        //MSG_REF.child("fulfillmentText").setValue(message, new DatabaseReference.CompletionListener() {
-        //    @Override
-        //    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        //        synchronized (FirebaseDB.this) {
-        //            FirebaseDB.this.notify();
-        //        }
-        //    }
-        //});
+    public void putMessageAsync(String message) {
         MSG_REF.child("fulfillmentText").setValueAsync(message);
-        //synchronized (this) {
-        //    try {
-        //        wait();
-        //    } catch (InterruptedException e) {
-        //        e.printStackTrace();
-        //    }
-        //}
+    }
+    public void putMessage(String message) {
+        putMessage(message, "fulfillmentText");
+    }
+    
+    public void putMessage(String message, String child) {
+        MSG_REF.child(child).setValue(message, new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                synchronized (FirebaseDB.this) {
+                    FirebaseDB.this.notify();
+                }
+            }
+        });
+        synchronized (this) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

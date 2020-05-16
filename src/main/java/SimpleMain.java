@@ -8,10 +8,8 @@ public class SimpleMain {
     private int whatIsIndex;
     
     private String msg;
-    private String msg1;
-    private String msg2;
     
-    private List<String> messageBuffer;
+    private volatile List<String> messageBuffer;
     private final int MSG_BUFFER_SIZE;
     
     private String switchMsg;
@@ -34,9 +32,10 @@ public class SimpleMain {
     private BotsDriver bot1;
     private BotsDriver bot2;
     
-    private FirebaseDB db;
+    private static FirebaseDB db;
     
     private final Object BUFFER_LOCK;
+    private final Object MESSAGE_LOCK;
     
     public SimpleMain() {
         notEnglishResponses = new ArrayList<>(Arrays.asList(
@@ -62,8 +61,6 @@ public class SimpleMain {
         whatIsIndex = 0;
         
         msg = "Hello";
-        msg1 = "";
-        msg2 = "";
         
         messageBuffer = new ArrayList<>();
         MSG_BUFFER_SIZE = 10;
@@ -85,13 +82,19 @@ public class SimpleMain {
         englishTreshold = 3;
         nonEnglishCount = 0;
         
-        bot1 = new BotsDriver("admin1.json", "https://startbots-81ecb.firebaseio.com/");
+        bot1 = new BotsDriver();
         bot1.setPos(0, 0, 800, 860);
-        bot2 = new BotsDriver("admin2.json", "https://startbots-50730.firebaseio.com/");
+        bot2 = new BotsDriver();
         bot2.setPos(800, 0, 800, 860);
         
         BUFFER_LOCK = new Object();
+        MESSAGE_LOCK = new Object();
+        
         initBufferList();
+    }
+    
+    public static void initFirebase(String filename, String url) {
+        db = new FirebaseDB(filename, url);
     }
     
     private void initBufferList() {
@@ -101,6 +104,7 @@ public class SimpleMain {
     }
     
     public static void main(String[] args) {
+        initFirebase("admin1.json", "https://startbots-81ecb.firebaseio.com/");
         new SimpleMain().testTwoBots();
     }
     
@@ -114,7 +118,7 @@ public class SimpleMain {
                 String change = scn.nextLine();
                 if (change.equals(".consume")) {
                     messageBuffer.set(MSG_BUFFER_SIZE - 1, "");
-                    System.out.println("Consumed messgage.");
+                    System.out.println(consumeMessage());
                     continue;
                 }
                 System.out.println("Message set.");
@@ -146,16 +150,53 @@ public class SimpleMain {
     private void asyncBufferGenerator() {
         Thread t = new Thread(() -> {
             while (true) {
-                if (messageBuffer.get(MSG_BUFFER_SIZE - 1).equals("")) {
-                    synchronized (BUFFER_LOCK) {
-                        BUFFER_LOCK.notify();
+                synchronized (MESSAGE_LOCK) {
+                    if (messageBuffer.get(MSG_BUFFER_SIZE - 1).equals("")) {
+                        synchronized (BUFFER_LOCK) {
+                            BUFFER_LOCK.notify();
+                        }
                     }
-                } else {
-                    try {
-                        Thread.sleep(250);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                
+            }
+        });
+        t.start();
+    }
+    
+    private void asyncDatabaseHandler() {
+        Thread t = new Thread(() -> {
+            boolean startFlag = true;
+            
+            while (startFlag) {
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                synchronized (MESSAGE_LOCK) {
+                    if (messageBuffer.get(MSG_BUFFER_SIZE - 1).isEmpty()) {
+                        continue;
                     }
+                }
+                startFlag = false;
+                db.putMessage(consumeMessage());
+                db.putMessage(consumeMessage(), "bufferMsg");
+            }
+            System.out.println("Ready to listen for requests.");
+            while (true) {
+                if (db.isRequestFlag()) {
+                    db.disableFlag();
+                    db.putMessage(consumeMessage(), "bufferMsg");
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         });
@@ -166,6 +207,7 @@ public class SimpleMain {
         asyncMessageInjector();
         asyncBotsLoop();
         asyncBufferGenerator();
+        asyncDatabaseHandler();
     }
     
     private void handleBehavior() {
@@ -224,37 +266,28 @@ public class SimpleMain {
         //changeMsgChain();
     }
     
-    private void updateBuffer() {
-        for (int i = MSG_BUFFER_SIZE - 1; i > 0; --i) {
-            messageBuffer.set(i,messageBuffer.get(i - 1));
-        }
-        messageBuffer.set(0, msg);
-    }
-    
-    private void waitServerConfirmation(BotsDriver bot, BotsDriver otherBot) {
-        if (msg2.isEmpty()) {
-            return;
-        }
-        
-        System.out.println("Waiting for server...");
-        while (true) {
-            if (db.isRequestFlag()) {
-                db.putMessage(msg2);
-                System.out.println("Google Nest finished!!");
-                db.disableFlag();
+    private String consumeMessage() {
+        String message = "";
+        synchronized (MESSAGE_LOCK) {
+            for (int i = MSG_BUFFER_SIZE - 1; i >= 0; --i) {
+                if (messageBuffer.get(i).isEmpty()) {
+                    continue;
+                }
+                message = messageBuffer.get(i);
+                messageBuffer.set(i, "");
                 break;
             }
-            try {
-                Thread.sleep(25);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
+        return message;
     }
     
-    private void changeMsgChain() {
-        msg2 = msg1;
-        msg1 = msg;
+    private void updateBuffer() {
+        synchronized (MESSAGE_LOCK) {
+            for (int i = MSG_BUFFER_SIZE - 1; i > 0; --i) {
+                messageBuffer.set(i, messageBuffer.get(i - 1));
+            }
+            messageBuffer.set(0, msg);
+        }
     }
     
     private void checkAlerts() {
@@ -331,5 +364,4 @@ public class SimpleMain {
     }
 */
 
-    
 }
