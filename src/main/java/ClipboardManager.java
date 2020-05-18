@@ -32,7 +32,11 @@ public class ClipboardManager {
     }
     
     private void setContents(StringSelection ss) {
-        clipboard.setContents(ss, null);
+        try {
+            clipboard.setContents(ss, null);
+        } catch (IllegalStateException e) {
+            setContents(ss);
+        }
         try {
             Thread.sleep(10);
         } catch (InterruptedException e) {

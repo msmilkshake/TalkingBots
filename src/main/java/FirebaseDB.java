@@ -10,11 +10,10 @@ public class FirebaseDB {
     private FirebaseOptions options;
     private final FirebaseDatabase DATABASE;
     private final DatabaseReference REF;
-    private final DatabaseReference MSG_REF;
+    private final DatabaseReference JUST_SAID_1;
+    private final DatabaseReference JUST_SAID_2;
     
-    private DataSnapshot msgData;
-    
-    private boolean requestFlag;
+    private int requestNumber;
     
     public FirebaseDB(String filename, String dbUrl) {
         try {
@@ -31,9 +30,10 @@ public class FirebaseDB {
         FirebaseApp fbApp = FirebaseApp.initializeApp(options, String.valueOf(hashCode()));
         DATABASE = FirebaseDatabase.getInstance(fbApp);
         REF = DATABASE.getReference("flag");
-        MSG_REF = DATABASE.getReference("msg");
+        JUST_SAID_1 = DATABASE.getReference("justSaid1");
+        JUST_SAID_2 = DATABASE.getReference("justSaid2");
         
-        requestFlag = false;
+        requestNumber = 0;
         
         createListeners();
         
@@ -44,9 +44,10 @@ public class FirebaseDB {
         REF.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                System.out.println("Inside data change listener");
+                
                 int value = dataSnapshot.child("value").getValue(Integer.class);
-                requestFlag = value != 0;
+                System.out.println("Bot changed flag value to " + value);
+                requestNumber = value;
             }
         
             @Override
@@ -55,17 +56,6 @@ public class FirebaseDB {
             }
         });
         
-        MSG_REF.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                msgData = dataSnapshot;
-            }
-    
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-        
-            }
-        });
     }
     
     public void readValue() {
@@ -105,20 +95,6 @@ public class FirebaseDB {
                 System.out.println("The read failed: " + databaseError.getCode());
             }
         });
-    
-        REF.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                System.out.println("Inside data change listener");
-                int value = dataSnapshot.child("value").getValue(Integer.class);
-                requestFlag = value != 0;
-            }
-        
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                System.out.println("The read failed: " + databaseError.getCode());
-            }
-        });
         
         // Wait until database gets read
         synchronized (this) {
@@ -134,8 +110,8 @@ public class FirebaseDB {
         System.out.println("At the end");
     }
     
-    public boolean isRequestFlag() {
-        return requestFlag;
+    public int getRequestNumber() {
+        return requestNumber;
     }
     
     public void disableFlag() {
@@ -156,15 +132,13 @@ public class FirebaseDB {
         }
     }
     
-    public void putMessageAsync(String message) {
-        MSG_REF.child("fulfillmentText").setValueAsync(message);
-    }
-    public void putMessage(String message) {
-        putMessage(message, "fulfillmentText");
+    public void putMessage(String ref, String message) {
+        putMessage(ref, message, "fulfillmentText");
     }
     
-    public void putMessage(String message, String child) {
-        MSG_REF.child(child).setValue(message, new DatabaseReference.CompletionListener() {
+    public void putMessage(String ref, String message, String child) {
+        DatabaseReference dbRef = DATABASE.getReference(ref);
+        dbRef.child(child).setValue(message, new DatabaseReference.CompletionListener() {
             @Override
             public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
                 synchronized (FirebaseDB.this) {

@@ -63,7 +63,7 @@ public class SimpleMain {
         msg = "Hello";
         
         messageBuffer = new ArrayList<>();
-        MSG_BUFFER_SIZE = 10;
+        MSG_BUFFER_SIZE = 6;
         
         switchMsg = null;
         
@@ -133,12 +133,12 @@ public class SimpleMain {
         Thread t = new Thread(() -> {
             while (true) {
                 try {
-                    handleBot(bot1, bot2);
-                    log.log("Bot 1: " + msg);
-                    Thread.sleep(500);
-                    handleBot(bot2, bot1);
-                    log.log("Bot 2: " + msg);
-                    Thread.sleep(500);
+                    handleBot(bot1);
+                    log.log("Test 1: " + msg);
+                    Thread.sleep(100);
+                    handleBot(bot2);
+                    log.log("Test 2: " + msg);
+                    Thread.sleep(100);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -158,7 +158,7 @@ public class SimpleMain {
                     }
                 }
                 try {
-                    Thread.sleep(250);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -174,7 +174,7 @@ public class SimpleMain {
             
             while (startFlag) {
                 try {
-                    Thread.sleep(250);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -184,17 +184,24 @@ public class SimpleMain {
                     }
                 }
                 startFlag = false;
-                db.putMessage(consumeMessage());
-                db.putMessage(consumeMessage(), "bufferMsg");
+                db.putMessage("msg1", consumeMessage());
+                db.putMessage("msg2", consumeMessage());
+                db.putMessage("msg1",consumeMessage(), "bufferMsg");
+                db.putMessage("msg2", consumeMessage(), "bufferMsg");
+                //db.putMessage(consumeMessage(), "bufferMsg");
             }
             System.out.println("Ready to listen for requests.");
             while (true) {
-                if (db.isRequestFlag()) {
+                if (db.getRequestNumber() == 1) {
+                    db.putMessage("msg1",consumeMessage(), "bufferMsg");
                     db.disableFlag();
-                    db.putMessage(consumeMessage(), "bufferMsg");
+                }
+                if (db.getRequestNumber() == 2) {
+                    db.putMessage("msg2", consumeMessage(), "bufferMsg");
+                    db.disableFlag();
                 }
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -221,7 +228,7 @@ public class SimpleMain {
         
     }
     
-    private void handleBot(BotsDriver bot, BotsDriver otherBot) {
+    private void handleBot(BotsDriver bot) {
         synchronized (BUFFER_LOCK) {
             try {
                 BUFFER_LOCK.wait();
@@ -277,6 +284,20 @@ public class SimpleMain {
                 messageBuffer.set(i, "");
                 break;
             }
+        }
+        message = validateMessage(message);
+        return message;
+    }
+    
+    private String validateMessage(String message) {
+        if (message.replaceAll("\\p{Punct}", "").length() < 9) {
+            message = "Short response: " + message;
+        }
+        if (message.contains("bye")) {
+            message = message.toLowerCase().replaceAll("bye", " b b y y e e");
+        }
+        if (message.toLowerCase().replaceAll("\\p{Blank}","").contains("nevermind")) {
+            message = message.toLowerCase().replaceAll("mind", "m m i i n n d d");
         }
         return message;
     }

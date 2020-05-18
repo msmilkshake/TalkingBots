@@ -24,7 +24,7 @@ public class Main {
     private void testDB() {
         FirebaseDB db = new FirebaseDB("admin1.json", "https://startbots-81ecb.firebaseio.com/");
         while (true) {
-            db.putMessage(scn.nextLine());
+            db.putMessage("msg", scn.nextLine());
         }
     }
     

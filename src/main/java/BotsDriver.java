@@ -40,7 +40,7 @@ public class BotsDriver {
         
         clearDataFlag = false;
     
-        mWait = new WebDriverWait(mDriver, 20);
+        mWait = new WebDriverWait(mDriver, 10);
         mTabHandles = new HashMap<>();
         newTab("cleverbot", "https://www.cleverbot.com", true);
         newTab("translator", "https://translate.google.com");
@@ -140,7 +140,7 @@ public class BotsDriver {
         t.start();
         try {
             t.join();
-            Thread.sleep(250);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -176,7 +176,7 @@ public class BotsDriver {
                 }
             }
             try {
-                Thread.sleep(250);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
