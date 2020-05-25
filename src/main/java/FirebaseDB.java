@@ -13,7 +13,11 @@ public class FirebaseDB {
     private final DatabaseReference JUST_SAID_1;
     private final DatabaseReference JUST_SAID_2;
     
+    private ChatWindow chat;
+    
     private int requestNumber;
+    
+    private boolean isListening;
     
     public FirebaseDB(String filename, String dbUrl) {
         try {
@@ -26,6 +30,8 @@ public class FirebaseDB {
             e.printStackTrace();
         }
         
+        isListening = false;
+        
         //FirebaseApp.initializeApp(options, String.valueOf(hashCode()));
         FirebaseApp fbApp = FirebaseApp.initializeApp(options, String.valueOf(hashCode()));
         DATABASE = FirebaseDatabase.getInstance(fbApp);
@@ -34,9 +40,20 @@ public class FirebaseDB {
         JUST_SAID_2 = DATABASE.getReference("justSaid2");
         
         requestNumber = 0;
+        createChatThread();
         
         createListeners();
         
+    }
+    
+    private void createChatThread() {
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                chat = new ChatWindow();
+            }
+        });
+        t.start();
     }
     
     private void createListeners() {
@@ -46,7 +63,7 @@ public class FirebaseDB {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 
                 int value = dataSnapshot.child("value").getValue(Integer.class);
-                System.out.println("Bot changed flag value to " + value);
+                //System.out.println("Bot changed flag value to " + value);
                 requestNumber = value;
             }
         
@@ -56,6 +73,40 @@ public class FirebaseDB {
             }
         });
         
+        JUST_SAID_1.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (isListening && chat.getInitial().equals("M")) {
+                    String msg = dataSnapshot.getValue(String.class);
+                    chat.printMessageInConsole(msg);
+                }
+            }
+    
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+        
+            }
+        });
+    
+        JUST_SAID_2.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (isListening && chat.getInitial().equals("F")) {
+                    String msg = dataSnapshot.getValue(String.class);
+                    chat.printMessageInConsole(msg);
+                }
+            }
+        
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            
+            }
+        });
+        
+    }
+    
+    public void setListening(boolean val) {
+        isListening = val;
     }
     
     public void readValue() {

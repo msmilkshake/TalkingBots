@@ -63,7 +63,7 @@ public class SimpleMain {
         msg = "Hello";
         
         messageBuffer = new ArrayList<>();
-        MSG_BUFFER_SIZE = 6;
+        MSG_BUFFER_SIZE = 10;
         
         switchMsg = null;
         
@@ -186,14 +186,15 @@ public class SimpleMain {
                 startFlag = false;
                 db.putMessage("msg1", consumeMessage());
                 db.putMessage("msg2", consumeMessage());
-                db.putMessage("msg1",consumeMessage(), "bufferMsg");
+                db.putMessage("msg1", consumeMessage(), "bufferMsg");
                 db.putMessage("msg2", consumeMessage(), "bufferMsg");
                 //db.putMessage(consumeMessage(), "bufferMsg");
             }
             System.out.println("Ready to listen for requests.");
+            db.setListening(true);
             while (true) {
                 if (db.getRequestNumber() == 1) {
-                    db.putMessage("msg1",consumeMessage(), "bufferMsg");
+                    db.putMessage("msg1", consumeMessage(), "bufferMsg");
                     db.disableFlag();
                 }
                 if (db.getRequestNumber() == 2) {
@@ -290,14 +291,39 @@ public class SimpleMain {
     }
     
     private String validateMessage(String message) {
-        if (message.replaceAll("\\p{Punct}", "").length() < 9) {
-            message = "Short response: " + message;
+        //if (message.replaceAll("\\p{Punct}", "").replaceAll("\\p{Blank}", "").length() < 10) {
+        //    message = "Short response: " + message;
+        //    message = "<speak><break time=\"0.1s\"/><prosody volume=\"x-loud\">" + message + "</prosody><break time=\"0.5s\"/></speak>";
+        //}
+        if (message.equals("Oh.")) {
+            message = "Oh ok.";
         }
-        if (message.contains("bye")) {
-            message = message.toLowerCase().replaceAll("bye", " b b y y e e");
+        if (message.equals("How?")) {
+            message = "How is it?";
         }
-        if (message.toLowerCase().replaceAll("\\p{Blank}","").contains("nevermind")) {
-            message = message.toLowerCase().replaceAll("mind", "m m i i n n d d");
+    
+        if (message.equals("Who?")) {
+            message = "Who is it?";
+        }
+    
+        if (message.equals("Why?")) {
+            message = "Why is that?";
+        }
+        
+        if (message.toLowerCase().contains("bye")
+                || message.toLowerCase().contains("stop")
+                || message.toLowerCase().contains("close")) {
+            message = message.toLowerCase()
+                    .replaceAll("bye", " b b y y e")
+                    .replaceAll("stop", "s t t o p")
+                    .replaceAll("close", "c l l o s e e");
+        }
+        if (message.toLowerCase().contains("lol")) {
+            message = message.toLowerCase()
+                    .replaceAll("lol", " *laughting out loud* ");
+        }
+        if (message.toLowerCase().replaceAll("\\p{Blank}", "").contains("nevermind")) {
+            message = message.toLowerCase().replaceAll("mind", "m i i n d");
         }
         return message;
     }
@@ -317,7 +343,7 @@ public class SimpleMain {
             System.out.println("mesagesSinceAlert: " + messagesSinceAlert);
             System.out.println("alertsCounter: " + BotsDriver.getAlertsCounter());
         }
-        if (messagesSinceAlert > 25 && !generateRandomCount) {
+        if (messagesSinceAlert > 50 && !generateRandomCount) {
             if (BotsDriver.getAlertsCounter() >= 3) {
                 System.out.println("Favorable conditions to clear data");
                 randomMsgNumber = new Random().nextInt(10) + 5;
@@ -384,5 +410,4 @@ public class SimpleMain {
         }
     }
 */
-
 }

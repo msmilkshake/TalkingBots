@@ -16,6 +16,7 @@ public class BotsDriver {
     
     private WebDriver mDriver;
     private WebDriverWait mWait;
+    private WebDriverWait mWaitForLang;
     
     private ClipboardManager clipboard;
     
@@ -40,7 +41,8 @@ public class BotsDriver {
         
         clearDataFlag = false;
     
-        mWait = new WebDriverWait(mDriver, 10);
+        mWait = new WebDriverWait(mDriver, 12);
+        mWaitForLang = new WebDriverWait(mDriver, 5);
         mTabHandles = new HashMap<>();
         newTab("cleverbot", "https://www.cleverbot.com", true);
         newTab("translator", "https://translate.google.com");
@@ -122,7 +124,14 @@ public class BotsDriver {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        mWait.until(presenceOfElementLocated(By.id("snipTextIcon")));
+        try {
+            mWait.until(presenceOfElementLocated(By.id("snipTextIcon")));
+        } catch (TimeoutException e) {
+            System.out.println("Caught no scisors error!");
+            mDriver.switchTo().window(mTabHandles.get("cleverbot"));
+            mWait.until(presenceOfElementLocated(By.name("thinkformebutton"))).click();
+            mWait.until(presenceOfElementLocated(By.id("snipTextIcon")));
+        }
         return mDriver.findElement(By.id("line1")).getText();
     }
     
@@ -168,11 +177,18 @@ public class BotsDriver {
             WebElement detectedLaguage = mWait.until(presenceOfElementLocated(By
                     .cssSelector("div.goog-inline-block.jfk-button.jfk-button-standard" +
                             ".jfk-button-collapse-right.jfk-button-checked")));
+            int timeout = 0;
             while (!detectedLaguage.getText().toLowerCase().contains("detected")) {
                 try {
                     Thread.sleep(50);
+                    ++timeout;
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                }
+                if (timeout == 60) {
+                    System.out.println("Lang check timed out.");
+                    lang = "eng";
+                    break;
                 }
             }
             try {
