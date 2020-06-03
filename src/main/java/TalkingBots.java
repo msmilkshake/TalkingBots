@@ -1,6 +1,10 @@
+import application.BotsDriver;
+import application.FirebaseDB;
+import application.Log;
+
 import java.util.*;
 
-public class SimpleMain {
+public class TalkingBots {
     private List<String> notEnglishResponses;
     private int notEnglishIndex;
     
@@ -37,7 +41,7 @@ public class SimpleMain {
     private final Object BUFFER_LOCK;
     private final Object MESSAGE_LOCK;
     
-    public SimpleMain() {
+    public TalkingBots() {
         notEnglishResponses = new ArrayList<>(Arrays.asList(
                 "Please, speak in english.",
                 "I can't speak other languages.",
@@ -105,7 +109,7 @@ public class SimpleMain {
     
     public static void main(String[] args) {
         initFirebase("admin1.json", "https://startbots-81ecb.firebaseio.com/");
-        new SimpleMain().testTwoBots();
+        new TalkingBots().testTwoBots();
     }
     
     private void testDatabase() {
@@ -389,8 +393,8 @@ public class SimpleMain {
 /*
     private void testSendingInput() {
         Scanner scn = new Scanner(System.in);
-        BotsDriver bot1 = new BotsDriver();
-        BotsDriver bot2 = new BotsDriver();
+        application.BotsDriver bot1 = new application.BotsDriver();
+        application.BotsDriver bot2 = new application.BotsDriver();
         while (true) {
             System.out.println("Enter message for bot");
             String input = scn.nextLine();

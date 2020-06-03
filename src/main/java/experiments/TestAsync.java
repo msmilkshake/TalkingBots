@@ -1,13 +1,14 @@
+package experiments;
 
 import java.util.Scanner;
 
-public class SyncTest {
+public class TestAsync {
     
     private Scanner scanner;
     private Object lock;
     private volatile String string;
     
-    public SyncTest() {
+    public TestAsync() {
         scanner = new Scanner(System.in);
         lock = new Object();
         string = "";
@@ -64,7 +65,7 @@ public class SyncTest {
     }
     
     public static void main(String[] args) {
-        new SyncTest().start();
+        new TestAsync().start();
     }
     
 }

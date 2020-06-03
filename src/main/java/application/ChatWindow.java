@@ -1,12 +1,10 @@
+package application;
+
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.geom.AffineTransform;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.annotation.Documented;
 import java.util.Scanner;
 
 public class ChatWindow {
@@ -47,11 +45,6 @@ public class ChatWindow {
         //asyncConsole();
         callBlinkingCarret();
     }
-    
-    public static void main(String[] args) {
-        new ChatWindow();
-    }
-    
     
     private Font createFont() {
         try {
@@ -115,7 +108,7 @@ public class ChatWindow {
         frame.getContentPane().setBackground(Color.decode("#000000"));
         frame.setSize(w, h);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setTitle("ChatWindow");
+        frame.setTitle("application.ChatWindow");
         
         text = new JTextPane();
         text.setCaretColor(Color.decode("#000000"));

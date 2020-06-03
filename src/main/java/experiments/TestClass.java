@@ -1,24 +1,23 @@
+package experiments;
+
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.sql.Driver;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-import static org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated;
-
-public class Main {
+public class TestClass {
     
     private Scanner scn;
     
-    public Main() {
+    public TestClass() {
         scn = new Scanner(System.in);
     }
     
     public static void main(String[] args) {
-        new Main().testDB();
+        new TestClass().testDB();
     }
     
     private void testDB() {

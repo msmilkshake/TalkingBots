@@ -1,3 +1,5 @@
+package experiments;
+
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -7,7 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-public class Database {
+public class TestDatabase {
     public static void main(String[] args) {
         // Fetch the service account key JSON file contents
         FileInputStream serviceAccount = null;
