@@ -5,6 +5,6 @@
 https://twitch.tv/aiBotsChat
 
 Two google nest minis having a chat.
-this project is a teibute to SeeBotsChat amd it utiliEs cleverbot.com to generate their messages.
+this project is a tribute to SeeBotsChat amd it utiliEs cleverbot.com to generate their messages.
 
 this was also done just to practice some Java.
