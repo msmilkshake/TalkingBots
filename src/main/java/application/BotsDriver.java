@@ -37,12 +37,12 @@ public class BotsDriver {
         opt.setUnhandledPromptBehaviour(UnexpectedAlertBehaviour.IGNORE);
         mDriver = new ChromeDriver(opt);
         mDriver.manage().timeouts().pageLoadTimeout(20, TimeUnit.SECONDS);
-    
+        
         clipboard = new ClipboardManager();
         getLang = new GetLang();
         
         clearDataFlag = false;
-    
+        
         mWait = new WebDriverWait(mDriver, 12);
         mWaitForLang = new WebDriverWait(mDriver, 5);
         mTabHandles = new HashMap<>();
@@ -50,6 +50,12 @@ public class BotsDriver {
         newTab("translator", "https://translate.google.com");
         newTab("clearData", "chrome://settings/clearBrowserData");
         mDriver.switchTo().window(mTabHandles.get("cleverbot"));
+        try {
+            mDriver.findElement(By.cssSelector("#noteb > form > input[type=submit]")).click();
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
     
     private static void setChromeDriverProperty() {
@@ -67,6 +73,7 @@ public class BotsDriver {
     public void setClearDataFlag(boolean clearDataFlag) {
         this.clearDataFlag = clearDataFlag;
     }
+    
     public boolean isClearDataFlag() {
         return clearDataFlag;
     }
@@ -139,7 +146,7 @@ public class BotsDriver {
     
     public boolean isEnglish(String text) {
         mDriver.switchTo().window(mTabHandles.get("translator"));
-
+        
         clipboard.putInClipboard(text);
         
         WebElement translateInput = mWait.until(presenceOfElementLocated(By.id("source")));

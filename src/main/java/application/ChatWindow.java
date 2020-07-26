@@ -145,7 +145,6 @@ public class ChatWindow {
         blinkingCaret = false;
         try {
             Thread.sleep(150);
-            //I think you're a good friend and an amaz ing person as a whole.
             String response = "";
             int length = s.length();
             boolean firstLine = true;

@@ -1,5 +1,5 @@
 import application.BotsDriver;
-import application.FirebaseDB;
+import application.ChatWindow;
 import application.Log;
 
 import java.util.*;
@@ -22,6 +22,8 @@ public class TalkingBots {
     
     private Scanner scn;
     
+    private ChatWindow chat;
+    
     private Integer messagesSinceAlert;
     private int randomMsgNumber;
     private boolean clearDataFlag;
@@ -35,8 +37,6 @@ public class TalkingBots {
     
     private BotsDriver bot1;
     private BotsDriver bot2;
-    
-    private static FirebaseDB db;
     
     private final Object BUFFER_LOCK;
     private final Object MESSAGE_LOCK;
@@ -67,7 +67,7 @@ public class TalkingBots {
         msg = "Hello";
         
         messageBuffer = new ArrayList<>();
-        MSG_BUFFER_SIZE = 10;
+        MSG_BUFFER_SIZE = 100_000;
         
         switchMsg = null;
         
@@ -85,6 +85,7 @@ public class TalkingBots {
         
         englishTreshold = 3;
         nonEnglishCount = 0;
+        chat = new ChatWindow();
         
         bot1 = new BotsDriver();
         bot1.setPos(0, 0, 800, 860);
@@ -97,10 +98,6 @@ public class TalkingBots {
         initBufferList();
     }
     
-    public static void initFirebase(String filename, String url) {
-        db = new FirebaseDB(filename, url);
-    }
-    
     private void initBufferList() {
         for (int i = 0; i < MSG_BUFFER_SIZE; ++i) {
             messageBuffer.add("");
@@ -108,12 +105,7 @@ public class TalkingBots {
     }
     
     public static void main(String[] args) {
-        initFirebase("admin1.json", "https://startbots-81ecb.firebaseio.com/");
         new TalkingBots().testTwoBots();
-    }
-    
-    private void testDatabase() {
-        new FirebaseDB("admin1.json", "https://startbots-81ecb.firebaseio.com/").start();
     }
     
     private void asyncMessageInjector() {
@@ -138,9 +130,11 @@ public class TalkingBots {
             while (true) {
                 try {
                     handleBot(bot1);
+                    chat.printMessageInConsole(msg);
                     log.log("Test 1: " + msg);
                     Thread.sleep(100);
                     handleBot(bot2);
+                    chat.printMessageInConsole(msg);
                     log.log("Test 2: " + msg);
                     Thread.sleep(100);
                 } catch (Exception e) {
@@ -188,28 +182,6 @@ public class TalkingBots {
                     }
                 }
                 startFlag = false;
-                db.putMessage("msg1", consumeMessage());
-                db.putMessage("msg2", consumeMessage());
-                db.putMessage("msg1", consumeMessage(), "bufferMsg");
-                db.putMessage("msg2", consumeMessage(), "bufferMsg");
-                //db.putMessage(consumeMessage(), "bufferMsg");
-            }
-            System.out.println("Ready to listen for requests.");
-            db.setListening(true);
-            while (true) {
-                if (db.getRequestNumber() == 1) {
-                    db.putMessage("msg1", consumeMessage(), "bufferMsg");
-                    db.disableFlag();
-                }
-                if (db.getRequestNumber() == 2) {
-                    db.putMessage("msg2", consumeMessage(), "bufferMsg");
-                    db.disableFlag();
-                }
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             }
         });
         t.start();
