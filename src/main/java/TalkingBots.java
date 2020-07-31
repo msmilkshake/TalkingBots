@@ -14,7 +14,7 @@ public class TalkingBots {
     private String msg;
     
     private volatile List<String> messageBuffer;
-    private final int MSG_BUFFER_SIZE;
+    private final int MSG_BUFFER_SIZE = 10;
     
     private String switchMsg;
     
@@ -67,7 +67,6 @@ public class TalkingBots {
         msg = "Hello";
         
         messageBuffer = new ArrayList<>();
-        MSG_BUFFER_SIZE = 10;
         
         switchMsg = null;
         
