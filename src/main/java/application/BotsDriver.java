@@ -50,6 +50,12 @@ public class BotsDriver {
         newTab("translator", "https://translate.google.com");
         newTab("clearData", "chrome://settings/clearBrowserData");
         mDriver.switchTo().window(mTabHandles.get("cleverbot"));
+        try {
+            mDriver.findElement(By.cssSelector("#noteb > form > input[type=submit]")).click();
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
     
     private static void setChromeDriverProperty() {
